@@ -1,5 +1,7 @@
 
 import { useState, FormEvent } from 'react';
+import { SITE_CONFIG } from '../../../config/site.config';
+import { submitContactForm } from '../../../lib/api';
 
 export default function ContactForm() {
   const [formData, setFormData] = useState({
@@ -18,43 +20,25 @@ export default function ContactForm() {
     setIsSubmitting(true);
     setSubmitStatus('idle');
 
-    try {
-      const formBody = new URLSearchParams();
-      formBody.append('name', formData.name);
-      formBody.append('company', formData.company);
-      formBody.append('email', formData.email);
-      formBody.append('phone', formData.phone);
-      formBody.append('equipment', formData.equipment);
-      formBody.append('message', formData.message);
+    const ok = await submitContactForm({
+      name: formData.name,
+      phone: formData.phone,
+      email: formData.email,
+      company: formData.company,
+      equipment: formData.equipment,
+      message: formData.message,
+    });
 
-      const response = await fetch('https://readdy.ai/api/form/d6amfgua728k8ctu3d90', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: formBody.toString()
-      });
-
-      if (response.ok) {
-        setSubmitStatus('success');
-        setFormData({
-          name: '',
-          company: '',
-          email: '',
-          phone: '',
-          equipment: '',
-          message: ''
-        });
-      } else {
-        setSubmitStatus('error');
-      }
-    } catch (error) {
-      console.error('Form submission error:', error);
+    if (ok) {
+      setSubmitStatus('success');
+      setFormData({ name: '', company: '', email: '', phone: '', equipment: '', message: '' });
+    } else {
       setSubmitStatus('error');
-    } finally {
-      setIsSubmitting(false);
     }
+    setIsSubmitting(false);
   };
+
+  const { contacts } = SITE_CONFIG;
 
   return (
     <section id="contact" className="py-12 sm:py-20 bg-gradient-to-b from-gray-50 to-white">
@@ -75,8 +59,10 @@ export default function ContactForm() {
                 </div>
                 <div>
                   <h3 className="text-sm sm:text-base font-bold text-gray-900 mb-1">Телефон</h3>
-                  <p className="text-xs sm:text-sm text-gray-600">+7-800-321-44-77</p>
-                  <p className="text-xs sm:text-sm text-gray-600">Пн-Пт: 9:00 — 18:00</p>
+                  <a href={`tel:${contacts.phone}`} className="text-xs sm:text-sm text-gray-600 hover:text-red-600 transition-colors">
+                    {contacts.phoneFormatted}
+                  </a>
+                  <p className="text-xs sm:text-sm text-gray-600">{contacts.workingHours}</p>
                 </div>
               </div>
 
@@ -86,8 +72,9 @@ export default function ContactForm() {
                 </div>
                 <div>
                   <h3 className="text-sm sm:text-base font-bold text-gray-900 mb-1">Электронная почта</h3>
-                  <p className="text-xs sm:text-sm text-gray-600">sales@kirovbelmash.ru</p>
-                  <p className="text-xs sm:text-sm text-gray-600">info@kirovbelmash.ru</p>
+                  <a href={`mailto:${contacts.email}`} className="text-xs sm:text-sm text-gray-600 hover:text-red-600 transition-colors">
+                    {contacts.email}
+                  </a>
                 </div>
               </div>
 
@@ -97,8 +84,8 @@ export default function ContactForm() {
                 </div>
                 <div>
                   <h3 className="text-sm sm:text-base font-bold text-gray-900 mb-1">Адрес</h3>
-                  <p className="text-xs sm:text-sm text-gray-600">г. Киров, Россия</p>
-                  <p className="text-xs sm:text-sm text-gray-600">Производственная площадь: 5000 м²</p>
+                  <p className="text-xs sm:text-sm text-gray-600">{contacts.address.city}, {contacts.address.region}</p>
+                  <p className="text-xs sm:text-sm text-gray-600">{contacts.address.street}</p>
                 </div>
               </div>
             </div>
@@ -109,22 +96,17 @@ export default function ContactForm() {
                 <div>
                   <h4 className="text-xs sm:text-sm font-bold text-gray-900 mb-2">Что входит в КП:</h4>
                   <ul className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm text-gray-600">
-                    <li className="flex items-center space-x-2">
-                      <i className="ri-check-line text-red-600"></i>
-                      <span>Консультация по подбору оборудования</span>
-                    </li>
-                    <li className="flex items-center space-x-2">
-                      <i className="ri-check-line text-red-600"></i>
-                      <span>Технические характеристики</span>
-                    </li>
-                    <li className="flex items-center space-x-2">
-                      <i className="ri-check-line text-red-600"></i>
-                      <span>Стоимость и сроки поставки</span>
-                    </li>
-                    <li className="flex items-center space-x-2">
-                      <i className="ri-check-line text-red-600"></i>
-                      <span>Варианты монтажа и обучения</span>
-                    </li>
+                    {[
+                      'Консультация по подбору оборудования',
+                      'Технические характеристики',
+                      'Стоимость и сроки поставки',
+                      'Варианты монтажа и обучения',
+                    ].map((item) => (
+                      <li key={item} className="flex items-center space-x-2">
+                        <i className="ri-check-line text-red-600"></i>
+                        <span>{item}</span>
+                      </li>
+                    ))}
                   </ul>
                 </div>
               </div>
@@ -132,7 +114,7 @@ export default function ContactForm() {
           </div>
 
           <div className="bg-white p-5 sm:p-8 rounded-2xl shadow-lg border border-gray-100">
-            <form id="contact-form" onSubmit={handleSubmit} data-readdy-form>
+            <form id="contact-form" onSubmit={handleSubmit}>
               <div className="space-y-4 sm:space-y-5">
                 <div>
                   <label htmlFor="name" className="block text-xs sm:text-sm font-semibold text-gray-900 mb-1.5 sm:mb-2">

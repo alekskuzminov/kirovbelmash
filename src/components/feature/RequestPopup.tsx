@@ -1,5 +1,7 @@
 
 import { useState, useEffect, FormEvent, useCallback } from 'react';
+import { SITE_CONFIG } from '../../config/site.config';
+import { submitContactForm } from '../../lib/api';
 
 let openPopupFn: (() => void) | null = null;
 
@@ -32,19 +34,13 @@ export default function RequestPopup() {
   }, [open]);
 
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
+    document.body.style.overflow = isOpen ? 'hidden' : '';
     return () => {
       document.body.style.overflow = '';
     };
   }, [isOpen]);
 
-  const close = () => {
-    setIsOpen(false);
-  };
+  const close = () => setIsOpen(false);
 
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) close();
@@ -58,34 +54,26 @@ export default function RequestPopup() {
     setIsSubmitting(true);
     setSubmitStatus('idle');
 
-    try {
-      const body = new URLSearchParams();
-      body.append('name', formData.name);
-      body.append('phone', formData.phone);
-      body.append('email', formData.email);
-      body.append('equipment', formData.equipment);
-      body.append('message', formData.message);
+    const ok = await submitContactForm({
+      name: formData.name,
+      phone: formData.phone,
+      email: formData.email,
+      equipment: formData.equipment,
+      message: formData.message,
+    });
 
-      const response = await fetch('https://readdy.ai/api/form/d6aug5nmvg9ih2c7arq0', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: body.toString(),
-      });
-
-      if (response.ok) {
-        setSubmitStatus('success');
-        setFormData({ name: '', phone: '', email: '', equipment: '', message: '' });
-      } else {
-        setSubmitStatus('error');
-      }
-    } catch {
+    if (ok) {
+      setSubmitStatus('success');
+      setFormData({ name: '', phone: '', email: '', equipment: '', message: '' });
+    } else {
       setSubmitStatus('error');
-    } finally {
-      setIsSubmitting(false);
     }
+    setIsSubmitting(false);
   };
 
   if (!isOpen) return null;
+
+  const { contacts } = SITE_CONFIG;
 
   return (
     <div
@@ -127,7 +115,7 @@ export default function RequestPopup() {
               </button>
             </div>
           ) : (
-            <form id="popup-request-form" data-readdy-form onSubmit={handleSubmit}>
+            <form id="popup-request-form" onSubmit={handleSubmit}>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -227,19 +215,19 @@ export default function RequestPopup() {
 
               <div className="flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-4 mt-4 pt-4 border-t border-gray-100">
                 <a
-                  href="tel:+79005218477"
+                  href={`tel:${contacts.phone}`}
                   className="flex items-center space-x-1.5 text-xs text-gray-500 hover:text-red-600 transition-colors cursor-pointer"
                 >
                   <i className="ri-phone-line text-sm"></i>
-                  <span>+7 900 521-84-77</span>
+                  <span>{contacts.phoneFormatted}</span>
                 </a>
                 <span className="hidden sm:inline text-gray-300">|</span>
                 <a
-                  href="mailto:sale@kirovbelmash.tw1.ru"
+                  href={`mailto:${contacts.email}`}
                   className="flex items-center space-x-1.5 text-xs text-gray-500 hover:text-red-600 transition-colors cursor-pointer"
                 >
                   <i className="ri-mail-line text-sm"></i>
-                  <span>sale@kirovbelmash.tw1.ru</span>
+                  <span>{contacts.email}</span>
                 </a>
               </div>
             </form>

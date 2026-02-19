@@ -1,4 +1,5 @@
 import { useState, FormEvent } from 'react';
+import { submitContactForm } from '../../../lib/api';
 
 export default function ContactsForm() {
   const [formData, setFormData] = useState({
@@ -13,7 +14,6 @@ export default function ContactsForm() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    // Basic client‑side validation
     if (!formData.name || !formData.phone || !formData.email) {
       setSubmitStatus('error');
       return;
@@ -26,36 +26,20 @@ export default function ContactsForm() {
     setIsSubmitting(true);
     setSubmitStatus('idle');
 
-    try {
-      const formBody = new URLSearchParams();
-      formBody.append('name', formData.name);
-      formBody.append('phone', formData.phone);
-      formBody.append('email', formData.email);
-      formBody.append('message', formData.message);
+    const ok = await submitContactForm({
+      name: formData.name,
+      phone: formData.phone,
+      email: formData.email,
+      message: formData.message,
+    });
 
-      const response = await fetch('https://readdy.ai/api/form/d6amiflbiueuoqm1sjj0', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: formBody.toString(),
-      });
-
-      if (response.ok) {
-        setSubmitStatus('success');
-        setFormData({ name: '', phone: '', email: '', message: '' });
-      } else {
-        // Capture possible error details for debugging
-        const errorText = await response.text().catch(() => '');
-        console.error('Form submission failed:', response.status, errorText);
-        setSubmitStatus('error');
-      }
-    } catch (err) {
-      console.error('Network or unexpected error:', err);
+    if (ok) {
+      setSubmitStatus('success');
+      setFormData({ name: '', phone: '', email: '', message: '' });
+    } else {
       setSubmitStatus('error');
-    } finally {
-      setIsSubmitting(false);
     }
+    setIsSubmitting(false);
   };
 
   return (
@@ -69,7 +53,7 @@ export default function ContactsForm() {
         </div>
 
         <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-100 p-5 sm:p-8">
-          <form id="contacts-page-form" onSubmit={handleSubmit} data-readdy-form>
+          <form id="contacts-page-form" onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
               <div>
                 <label htmlFor="cp-name" className="block text-sm font-semibold text-gray-900 mb-2">

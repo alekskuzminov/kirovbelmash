@@ -1,0 +1,7 @@
+refactor phase0: centralize config, replace Readdy API, remove unused files
+
+Added src/config/site.config.ts and src/lib/api.ts.
+Removed duplicate Navbar/Footer/Features from home/components.
+Refactored SiteNavbar, SiteFooter, RequestPopup, ContactForm, ServicesCTA, ContactsForm.
+All forms now use api.ts stub instead of readdy.ai endpoints.
+Build verified: 120 modules, 0 errors.
